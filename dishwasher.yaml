@@ -8,11 +8,17 @@ esphome:
   name: ${name}
   name_add_mac_suffix: false
 
-
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  
+
+
+text_sensor:
+  - platform: template
+    name: "Dishwasher Current State"
+    id: dishwasher_current_state
+
+
 binary_sensor:
 
 ################################################################################
@@ -30,22 +36,13 @@ binary_sensor:
       } else if (id(power_sensor).state > 4) {
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("Running");
       } else {
         // Not running
         return false;
       }
     on_press:
-      then: # at cycle start i reset all binary sensors
-        #Moved to end, because states all reset when the machine finishes, surely?
-        #- lambda: |-  
-        #    {
-        #      id(first_rinse).publish_state(false);
-        #      id(minimum_working_time).publish_state(false);
-        #      id(heated_wash).publish_state(false);
-        #      id(passive_wash).publish_state(false);
-        #      id(heated_rinse).publish_state(false);
-        #      id(drying).publish_state(false);
-        #    }
+      then:
     on_release:
       then: # at the end of cycle turn on end cycle
         - lambda: |-  
@@ -57,6 +54,7 @@ binary_sensor:
               id(passive_wash).publish_state(false);
               id(heated_rinse).publish_state(false);
               id(drying).publish_state(false);
+              id(dishwasher_current_state).publish_state("Ended");
             }        
 ################################################################################
 #                           Minimum duration cycle                             #
@@ -92,6 +90,7 @@ binary_sensor:
       } else if ( (id(power_sensor).state > 10)&&(id(power_sensor).state < 300)&&(id(minimum_working_time).state) ){
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("First Rinse");
       } else {
         // Not running
         return {};
@@ -110,6 +109,7 @@ binary_sensor:
       } else if ( (id(power_sensor).state > 250) && (id(power_sensor).state < 2500) && (id(first_rinse).state) ){
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("Heated Rinse");
       } else {
         // Not running
         return {};
@@ -128,6 +128,7 @@ binary_sensor:
       } else if ( (id(power_sensor).state > 15) && (id(power_sensor).state < 300) && (id(heated_wash).state) ){
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("Passive Wash");
       } else {
         // Not running
         return {};
@@ -146,6 +147,7 @@ binary_sensor:
       } else if ( (id(power_sensor).state > 300) && (id(power_sensor).state < 2500) && (id(passive_wash).state) ){
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("Heated Wash");
       } else {
         // Not running
         return {};
@@ -164,6 +166,7 @@ binary_sensor:
       } else if ( (id(power_sensor).state > 10) && (id(power_sensor).state < 80) && (id(heated_rinse).state) ){
         // Running
         return true;
+        id(dishwasher_current_state).publish_state("Drying");
       } else {
         // Not running
         return {};
